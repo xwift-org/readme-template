@@ -1,3 +1,12 @@
 __pycache__/
 *.pyc
 .DS_Store
+# local study material and screenshots (swift.org captures are reference only, never published)
+refs/
+study/
+inspo/
+comparisons/
+_backup-*/
+live-*.png
+preview-*.png
+tools/github-markdown.css

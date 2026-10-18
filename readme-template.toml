@@ -4,9 +4,9 @@ org      = "xwift-org"
 kind     = "tooling"
 tagline  = "Banners and READMEs for every Xwift repository."
 description = """
-One look across the org. The org profile and every repository README share the same artwork, palette and structure.
+One look across the org, taken from swift.org: the same type scale, spacing, colours and section rhythm, with original Xwift artwork and copy.
 
-`repo/render.py` reads a TOML config and writes `README.md`, plus a banner, a divider and a footer band in light and dark. The artwork is generated from the Xwift palette and seeded by the repository name. `org/profile/` holds the org profile. [`USAGE.md`](USAGE.md) explains both.
+`repo/render.py` reads a TOML config and writes `README.md` plus every block as an SVG in light and dark: the banner, section headers, code cards, swoops and the closing band with the footer. Text in the SVGs is outlined from Inter, so nothing depends on installed fonts. `org/profile/` holds the org profile. [`USAGE.md`](USAGE.md) explains both, and [`swiftorg-spec.md`](swiftorg-spec.md) lists the measured swift.org values.
 """
 install = """
 git clone https://github.com/xwift-org/readme-template.git
@@ -16,14 +16,14 @@ usage = """
 python3 repo/render.py repo repo/examples/xwift/xwift.toml
 python3 repo/render.py org --org xwift-org --out /tmp/xwift-profile"""
 output = """
-wrote repo/examples/xwift/README.md and repo/examples/xwift/.github/assets/banner-{light,dark}.svg
-wrote org assets to /tmp/xwift-profile/assets and README for xwift-org"""
-platforms_text = "Python 3.11 or later. Standard library only. No fonts are embedded."
+wrote repo/examples/xwift/README.md and repo/examples/xwift/.github/assets/
+wrote /tmp/xwift-profile/README.md and /tmp/xwift-profile/assets/ for xwift-org"""
+platforms_text = "Python 3.11 or later. Standard library only. No fonts are embedded; text is outlined from `brand/glyphs.json`."
 status = """
-In use for the [xwift-org](https://github.com/xwift-org) profile. The sample in `repo/examples/xwift/` renders the toolchain README.
+Renders the [xwift-org](https://github.com/xwift-org) profile. The sample in `repo/examples/xwift/` renders the toolchain README.
 """
 contributing = """
-1. Change `art.py` for primitives and `artwork.py` for compositions.
+1. Change `art.py` for primitives and `artwork.py` for compositions. Keep swift.org's measured values from `swiftorg-spec.md`.
 2. Render the org profile and the sample, and check both in light and dark.
 3. Keep the trademark line at the end of every README.
 """

@@ -1,0 +1,154 @@
+# Copy and structure of the org profile (github.com/<org>). render.py turns this into README.md and assets/.
+# Voice: short, confident, declarative, plain words. Every claim must be true today, or say "planned".
+org = "xwift-org"
+contact = "vido.teodor10@gmail.com"
+
+# Clickable row under the hero. The hero's own nav is drawn, so these are the real links.
+links = [
+  { label = "Overview", url = "#overview" },
+  { label = "Projects", url = "#projects" },
+  { label = "Status",   url = "#status" },
+  { label = "Contact",  url = "#contact" },
+]
+
+intro = "Xwift is built to be the one toolchain you reach for on every platform you ship to. Write apps, tools and services in Swift, and Xwift compiles them to native code for macOS, Windows, Linux, Android, iOS and the web."
+
+[hero]
+title    = ["Xwift is the universal toolchain,", "built on its own fork of Swift."]
+sub      = "Write once. Run everything."
+button   = "Contact"
+caption  = "Planned for macOS, Windows, Linux, Android, iOS and the web"
+create   = "Create with Xwift"
+nav_items = ["Overview", "Projects", "Status"]
+nav_cta  = "Contact"
+cards = [
+  { icon = "apps",     title = "Apps",         text = "One codebase for desktop and mobile apps." },
+  { icon = "web",      title = "Web",          text = "Compile to WebAssembly and run in any browser." },
+  { icon = "terminal", title = "Command Line", text = "Fast, memory-safe tools for every desktop OS." },
+]
+chips = ["Toolchain", "UI framework", "System APIs", "Package manager"]
+
+[[callouts]]
+id = "universal"
+title = "Universal"
+subtitle = "One codebase. Every platform."
+body = "Xwift compiles one Swift codebase for desktop, mobile and the web. The proof of concept already builds, tests and runs on macOS, Linux, Windows and WebAssembly in CI. Android and iOS come next."
+lang = "shell"
+code = """
+$ swift build
+$ swift test
+$ swift run xwift-hello
+Hello from Xwift on linux-x86_64 (64-bit)!
+"""
+
+[[callouts]]
+id = "native"
+title = "Native"
+subtitle = "Real binaries on every target."
+body = "Xwift compiles straight to native code through LLVM. No virtual machine and no bridge sit between your code and the platform. What you ship is a plain native binary."
+lang = "swift"
+code = """
+// From XwiftCore: resolved at compile time, once per target
+private static var currentOS: OperatingSystem {
+    #if os(macOS)
+    return .macOS
+    #elseif os(iOS)
+    return .iOS
+    #elseif os(Android)
+    return .android
+    #elseif os(Linux)
+    return .linux
+    #elseif os(Windows)
+    return .windows
+    #elseif os(WASI)
+    return .wasi
+    #else
+    return .unknown
+    #endif
+}
+"""
+
+[[callouts]]
+id = "owned"
+title = "Owned"
+subtitle = "Our fork. Our release cycle."
+body = "Xwift keeps its own fork of the Swift compiler, driver, package manager and installer scripts. Today the fork matches Swift 6.4.1 with no patches. Every other dependency is pinned to an exact commit, so each build can be reproduced."
+lang = "json"
+code = """
+{
+  "_scheme": {"name": "xwift/0.1", "aliases": ["xwift/0.1"]},
+  "swift":                   {"repo": "xwift-org/swift",                   "branch": "xwift/main"},
+  "swift-driver":            {"repo": "xwift-org/swift-driver",            "branch": "xwift/main"},
+  "swiftpm":                 {"repo": "xwift-org/swift-package-manager",   "branch": "xwift/main"},
+  "swift-installer-scripts": {"repo": "xwift-org/swift-installer-scripts", "branch": "xwift/main"}
+}
+"""
+
+[[callouts]]
+id = "familiar"
+title = "Familiar"
+subtitle = "It is Swift. Keep what you know."
+section = 2
+body = "Xwift speaks the Swift language and SwiftPM. Packages, tests and skills carry over unchanged, and the fork is synced from upstream Swift releases."
+lang = "swift"
+code = """
+// swift-tools-version:6.0
+import PackageDescription
+
+let package = Package(
+    name: "Xwift",
+    products: [
+        .library(name: "XwiftCore", targets: ["XwiftCore"]),
+        .executable(name: "xwift-hello", targets: ["xwift-hello"]),
+    ],
+    targets: [
+        .target(name: "XwiftCore"),
+        .executableTarget(name: "xwift-hello", dependencies: ["XwiftCore"]),
+        .testTarget(name: "XwiftCoreTests", dependencies: ["XwiftCore"]),
+    ],
+    swiftLanguageModes: [.v6]
+)
+"""
+
+[[callouts]]
+id = "projects"
+title = "Complete"
+subtitle = "One stack, top to bottom."
+section = 2
+body = """
+The toolchain comes first. A UI framework, system APIs and a package manager follow, each in its own repository.
+
+- **Toolchain.** The compiler, driver and package manager, forked from Swift 6.4.1. Private, in Phase 0.
+- **UI framework.** One declarative UI for every target. Planned.
+- **System APIs.** Files, networking, processes and devices, the same everywhere. Planned.
+- **Package manager.** Packages and a registry for all six targets. Planned.
+"""
+
+[status]
+title = "Status"
+subtitle = "Early, and clear about it."
+body = """
+- **Phase 0 is done.** Private mirrors of the Swift compiler, driver, package manager and installer scripts, plus a reproducible build setup.
+- **The proof of concept runs.** One package builds, tests and runs on macOS, Linux, Windows and WebAssembly in CI.
+- **Not released.** There is no public toolchain, no website and no download yet. The source repositories are private.
+- **License.** Not chosen yet.
+"""
+
+[contact_section]
+title = "Contact"
+subtitle = "Questions, ideas, early interest."
+body = "Write to [vido.teodor10@gmail.com](mailto:vido.teodor10@gmail.com). Watch [xwift-org](https://github.com/xwift-org) for the first public repositories."
+
+[band]
+title = "Follow Along"
+subtitle = "Xwift is early. This is the time to join."
+links = ["vido.teodor10@gmail.com", "github.com/xwift-org"]
+
+[footer]
+note = ["Xwift is in early development. Nothing on this page is released yet.", "Xwift is not affiliated with or endorsed by Apple Inc."]
+columns = [
+  { items = ["Overview", "Projects", "Status", "Contact"] },
+  { head = "Projects",  items = ["Toolchain", "UI framework", "System APIs", "Package manager"] },
+  { head = "Platforms", items = ["macOS", "Windows", "Linux", "Android", "iOS", "Web"] },
+  { head = "Contact",   items = ["vido.teodor10@gmail.com", "github.com/xwift-org"] },
+]
