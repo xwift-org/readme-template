@@ -1,0 +1,46 @@
+# Sample config: the Xwift toolchain repository.
+# Install, usage and platform status are taken from the proof of concept in baiehclaca/xwift.
+name     = "xwift"
+org      = "xwift-org"
+kind     = "toolchain"
+tagline  = "The Xwift compiler and toolchain."
+description = """
+The toolchain is the base of Xwift. It is Xwift's own fork of Swift and LLVM, modified by the Xwift project to target macOS, Windows, Linux, Android, iOS and Web from one source tree.
+
+This repository starts as the proof of concept: one package, one source tree, built and run on four targets in CI. The fork replaces the stock toolchain in a later stage.
+"""
+install = """
+git clone https://github.com/{{ORG}}/xwift.git
+cd xwift
+swift build
+swift test"""
+usage_lang = "sh"
+usage = "swift run xwift-hello"
+output = "Hello from Xwift on linux-x86_64 (64-bit)!"
+status = """
+Proof of concept. `swift build`, `swift test` and `swift run xwift-hello` run in CI on macOS, Linux, Windows and WebAssembly (WASI). Android and iOS are not in CI yet.
+"""
+contributing = """
+1. Install the toolchain pinned in `.swift-version`.
+2. `swift build && swift test` must pass locally.
+3. Open a pull request against `main`. CI must be green on every target.
+4. Keep commits focused, with imperative-mood messages.
+"""
+license = "Not chosen yet. See `LICENSE`."
+assets_dir = ".github/assets"
+
+links = [
+  { label = "Get started", url = "#install" },
+  { label = "Platforms",   url = "#platforms" },
+  { label = "Status",      url = "#status" },
+  { label = "Contributing", url = "#contributing" },
+]
+
+platforms = [
+  { name = "macOS",   status = "working",  note = "CI: build, test, run" },
+  { name = "Windows", status = "working",  note = "CI: build, test, run" },
+  { name = "Linux",   status = "working",  note = "CI: build, test, run" },
+  { name = "Android", status = "planned",  note = "Not in CI yet" },
+  { name = "iOS",     status = "planned",  note = "Not in CI yet" },
+  { name = "Web",     status = "working",  note = "WebAssembly (WASI). CI: build, run" },
+]

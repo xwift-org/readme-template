@@ -1,0 +1,36 @@
+# Config for this repository's own README, rendered by repo/render.py.
+name     = "readme-template"
+org      = "xwift-org"
+kind     = "tooling"
+tagline  = "Banners and READMEs for every Xwift repository."
+description = """
+One look across the org. The org profile and every repository README share the same artwork, palette and structure.
+
+`repo/render.py` reads a TOML config and writes `README.md`, plus a banner, a divider and a footer band in light and dark. The artwork is generated from the Xwift palette and seeded by the repository name. `org/profile/` holds the org profile. [`USAGE.md`](USAGE.md) explains both.
+"""
+install = """
+git clone https://github.com/xwift-org/readme-template.git
+cd readme-template"""
+usage_lang = "sh"
+usage = """
+python3 repo/render.py repo repo/examples/xwift/xwift.toml
+python3 repo/render.py org --org xwift-org --out /tmp/xwift-profile"""
+output = """
+wrote repo/examples/xwift/README.md and repo/examples/xwift/.github/assets/banner-{light,dark}.svg
+wrote org assets to /tmp/xwift-profile/assets and README for xwift-org"""
+platforms_text = "Python 3.11 or later. Standard library only. No fonts are embedded."
+status = """
+In use for the [xwift-org](https://github.com/xwift-org) profile. The sample in `repo/examples/xwift/` renders the toolchain README.
+"""
+contributing = """
+1. Change `art.py` for primitives and `artwork.py` for compositions.
+2. Render the org profile and the sample, and check both in light and dark.
+3. Keep the trademark line at the end of every README.
+"""
+license = "Not chosen yet."
+assets_dir = ".github/assets"
+links = [
+  { label = "Usage", url = "USAGE.md" },
+  { label = "Sample", url = "repo/examples/xwift/README.md" },
+  { label = "Org profile", url = "https://github.com/xwift-org" },
+]
