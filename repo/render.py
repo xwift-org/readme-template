@@ -110,9 +110,7 @@ def render_repo(cfg_path, out):
         if aid == "platforms":
             if cfg.get("platforms"):
                 write(assets, "platforms", lambda m: artwork.platform_cards(m, cfg["platforms"]))
-                md.append(picture(rel, "platforms", "Platforms"))
-                md.append("| Platform | Status | Notes |\n| --- | --- | --- |\n" + "\n".join(
-                    f'| {p["name"]} | {p.get("status", "")} | {p.get("note", "")} |' for p in cfg["platforms"]) + "\n")
+                md.append(picture(rel, "platforms", "; ".join(f'{p["name"]}: {p.get("status", "")}, {p.get("note", "")}' for p in cfg["platforms"])))
             else:
                 md.append(cfg.get("platforms_text", "Not applicable.") + "\n")
         else:

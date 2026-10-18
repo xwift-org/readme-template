@@ -9,8 +9,8 @@ from art import ribbon, wave, grain, rrect, icon
 
 # ---------------------------------------------------------------- shared pieces
 PALETTES = {  # ribbon colours, picked to sit in swift.org's warm/violet family without reusing its files
-    "pink":   [(0, "#ffd0ec"), (0.45, "#f99ad4"), (1, "#f070c0")],
-    "gold":   [(0, "#ffd23a"), (0.5, "#ffb000"), (1, "#ff7a00")],
+    "pink":   [(0, "#ffc4e7"), (0.45, "#ff8fd0"), (1, "#f25cb4")],
+    "gold":   [(0, "#ffdc4e"), (0.5, "#ffb300"), (1, "#ff8000")],
     "flame":  [(0, "#ffc94a"), (0.6, "#ff8a1f"), (1, "#f2542d")],
     "white":  [(0, "#ffffff"), (1, "#fff1e6")],
     "violet": [(0, "#b49cff"), (0.5, "#8a63f0"), (1, "#6a43d9")],
@@ -102,7 +102,7 @@ def hero(theme, mode, cfg):
     for i, (pal, pts, wd, tw, ph, sd) in enumerate(HERO_RIBBONS):
         d, b = ribbon(f"hr{i}", pts, wd, PALETTES[pal], twists=tw, phase=ph, seed=sd, strands=30,
                       shade={"pink": "#d1489e", "white": "#e8a0c8", "lilac": "#9a63c9"}.get(pal, "#e0560a"), reveal=(0.15 * i, 1.7),
-                      body_opacity=0.95, pinch=0.4, hi=0.38 if pal != "white" else 0.0, haze=0.35, scatter=0.2)
+                      body_opacity=0.97, pinch=0.4, hi=0.42 if pal != "white" else 0.0, haze=0.12, scatter=0.12)
         defs.append(d); body.append(b)
     # navigation bar over the art
     body.append(nav(t, theme, mode, cfg["nav_items"], cfg["nav_cta"]))
@@ -160,7 +160,7 @@ def intro(theme, text):
 def callout_head(theme, title, subtitle, align="start", top=60):
     """title-1 48/57.6 500 (margin -4 0 3), subtitle 24/28.8 500 (margin-bottom 22), callout padding 17."""
     th = THEMES[theme]; t = Text()
-    x = 17 if align == "start" else W / 2
+    x = 0 if align == "start" else W / 2  # flush with the Markdown text below
     y = top - 4
     b = t.run(title, "display-500", 48, x, baseline(y, 57.6, 48), th["text"], align)
     y += 57.6 + 3
@@ -206,8 +206,8 @@ def code_card(theme, code, lang="swift", label="Code example"):
     """pre: padding 28, 1 px border #d5d5d5 / #575757, radius 20, 14/21 code, bg rgba(255,255,255,.5) / #111727."""
     th = THEMES[theme]; syn = th["syntax"]; t = Text()
     lines = code.strip("\n").split("\n")
-    x0, top = 17, 0
-    w = W - 34; h = 56 + 21 * len(lines) + 2
+    x0, top = 0, 0
+    w = W; h = 56 + 21 * len(lines) + 2
     b = [rrect(x0 + 0.5, top + 0.5, w - 1, h - 1, 20, fill_attr(th["code_bg"]) + f' stroke="{th["code_border"]}"')]
     cw = t.width("M", "mono-400", 14)
     for i, line in enumerate(lines):
@@ -243,9 +243,9 @@ def closing(theme, mode, band, footer):
     #pillar-3: gradient #e4937f -> #a268c1 36% -> #4b3773, padding 64/40, white 48/24 type, 17 px underlined links.
     footer.global-footer: #1e162e, padding 96 48 48, headings #fca76c 19.89/700, links 14 px #ebecf0."""
     th = THEMES[theme]; t = Text(); defs = []; body = []
-    sw = 230  # swoop-2 overlap above the band
+    sw = 250  # swoop-2 lead-in above the band
     by = sw
-    bh = 64 + 57.6 - 4 + 3 + 28.8 + 22 + 30 + len(band["links"]) * (27.2 + 14) + 40 + 40
+    bh = 26 + 64 + 57.6 - 4 + 3 + 28.8 + 22 + 30 + len(band["links"]) * (27.2 + 14) + 40 + 40
     st = th["pillar3"]
     defs.append(f'<linearGradient id="p3" x1="0" y1="0" x2="0" y2="1">{stops(st)}</linearGradient>')
     # warm lead-in from the page colour into the band's first stop, like pillar-2 handing over to pillar-3
@@ -254,9 +254,9 @@ def closing(theme, mode, band, footer):
                 f'<stop offset="1" stop-color="{st[0][1]}"/></linearGradient>')
     body.append(f'<rect width="{W}" height="{by + 2}" fill="url(#lead)"/>')
     body.append(f'<rect y="{by}" width="{W}" height="{bh}" fill="url(#p3)"/>')
-    d, b = swoop_band("cl", theme, by - 190, 330, seed=2.2, kind="warm", reveal=(0.2, 1.8))
+    d, b = swoop_band("cl", theme, by - 215, 270, seed=2.2, kind="warm", reveal=(0.2, 1.8))
     defs.append(d); body.append(b)
-    y = by + 64 - 4
+    y = by + 64 + 26 - 4
     body.append(t.run(band["title"], "display-500", 48, W / 2, baseline(y, 57.6, 48), "#ffffff", "middle")); y += 57.6 + 3
     body.append(t.run(band["subtitle"], "mid-500", 24, W / 2, baseline(y, 28.8, 24), "#ffffff", "middle")); y += 28.8 + 22 + 30 - 14
     for lab in band["links"]:
@@ -297,7 +297,7 @@ def repo_banner(theme, mode, cfg):
     """A shorter hero for repository READMEs: nav, the repo name at title-0 size, the tagline at sub-text size,
     the kind as the orange button, swoop-0 underneath. Seeded by the repo name so each repo's ribbons differ."""
     th = THEMES[theme]; t = Text(); defs = []; body = []
-    H = 640
+    H = 700
     seed = sum(map(ord, cfg["name"])) % 97 / 97
     defs.append(f'<linearGradient id="rbg" x1="0.49" y1="0" x2="0.51" y2="1">{stops(th["hero_bg"])}</linearGradient>')
     body.append(f'<rect width="{W}" height="{H}" fill="url(#rbg)"/>')
@@ -307,17 +307,17 @@ def repo_banner(theme, mode, cfg):
         pts2 = [(x * 0.82 + dx, y * 0.62 - 20) for x, y in pts]
         d, b = ribbon(f"rr{i}", pts2, wd * 0.8, PALETTES[pal], twists=tw, phase=ph + seed, seed=sd + int(seed * 50), strands=26,
                       shade={"pink": "#d1489e", "white": "#e8a0c8", "lilac": "#9a63c9"}.get(pal, "#e0560a"),
-                      reveal=(0.15 * i, 1.6), body_opacity=0.95, pinch=0.4, hi=0.38 if pal != "white" else 0.0, haze=0.35, scatter=0.2)
+                      reveal=(0.15 * i, 1.6), body_opacity=0.97, pinch=0.4, hi=0.42 if pal != "white" else 0.0, haze=0.12, scatter=0.12)
         defs.append(d); body.append(b)
+    sd_, sb_ = swoop_band("rs", theme, H - 250, 250, seed=seed * 3, kind="hero", reveal=(0.5, 1.8))
+    defs.append(sd_); body.append(sb_)
     labels = [l["label"] for l in cfg.get("links", [])][:4] or ["Install", "Usage", "Status"]
     body.append(nav(t, theme, mode, labels[:-1] if len(labels) > 1 else labels, labels[-1] if len(labels) > 1 else "README"))
-    y = 200
-    body.append(t.run(cfg["name"], "display-600", 56, W / 2, baseline(y, 67.2, 56), th["hero_text"], "middle")); y += 67.2 + 30
-    tb, th_ = t.block(cfg["tagline"], "display-400", 32, 51.2, W / 2, y - 10, 860, th["hero_text"], "middle"); body.append(tb); y += th_ - 10 + 40
+    y = 190
+    body.append(t.run(cfg["name"], "display-600", 56, W / 2, baseline(y, 67.2, 56), th["hero_text"], "middle")); y += 67.2 + 20
+    tb, th_ = t.block(cfg["tagline"], "display-400", 32, 51.2, W / 2, y, 860, th["hero_text"], "middle"); body.append(tb); y += th_ + 40
     bd, bb, bh = button(t, cfg.get("kind", "repository").capitalize(), W / 2, y, size=28, padx=41)
     defs.append(bd); body.append(bb)
-    sd_, sb_ = swoop_band("rs", theme, H - 230, 240, seed=seed * 3, kind="hero", reveal=(0.5, 1.8))
-    defs.append(sd_); body.append(sb_)
     fd, fb = fade("rfade", H - 60, H, GH_BG[theme]); defs.append(fd); body.append(fb)
     return svg_doc(W, H, f'{cfg["name"]}. {cfg["tagline"]}', "".join(body), t, "".join(defs))
 
@@ -326,10 +326,10 @@ def platform_cards(theme, platforms):
     """Get Started boxes: 3 columns, gap 20, radius 20, padding 16/16/20, 24 px 600 title, 14 px text."""
     th = THEMES[theme]; t = Text(); body = []
     from render_base import STATUS_LABEL
-    cols = 3; gap = 20; cw = (W - 2 * PAD - gap * (cols - 1)) / cols; ch = 112
+    cols = 3; gap = 20; cw = (W - gap * (cols - 1)) / cols; ch = 112
     rows = (len(platforms) + cols - 1) // cols
     for i, p in enumerate(platforms):
-        r, c = divmod(i, cols); x = PAD + c * (cw + gap); y = 24 + r * (ch + gap)
+        r, c = divmod(i, cols); x = c * (cw + gap); y = 8 + r * (ch + gap)
         body.append(rrect(x, y, cw, ch, 20, fill_attr(th["card_bg"])))
         body.append(t.run(p["name"], "text-600", 24, x + 20, baseline(y + 16, 28.8, 24), th["card_text"]))
         lab = STATUS_LABEL.get(p.get("status", ""), p.get("status", ""))
@@ -340,6 +340,6 @@ def platform_cards(theme, platforms):
         body.append(t.run(lab, "text-500", 12, x + cw - 20 - lw + 6, y + 35.5, th["card_text"]))
         tb, _ = t.block(p.get("note", ""), "text-400", 14, 19.6, x + 20, y + 16 + 28.8 + 10, cw - 40, th["card_text"])
         body.append(tb)
-    H = 24 + rows * (ch + gap) - gap + 30
+    H = 8 + rows * (ch + gap) - gap + 26
     label = "Platforms: " + "; ".join(f'{p["name"]}: {STATUS_LABEL.get(p.get("status",""), p.get("status",""))}. {p.get("note","")}' for p in platforms)
     return svg_doc(W, H, label, "".join(body), t)

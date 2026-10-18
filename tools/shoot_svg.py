@@ -10,6 +10,6 @@ pathlib.Path("/tmp/_shoot.html").write_text(html)
 with sync_playwright() as p:
     b = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox", "--allow-file-access-from-files"])
     pg = b.new_page(viewport={"width": w, "height": 600})
-    pg.goto("file:///tmp/_shoot.html"); time.sleep(3.5)
+    pg.goto("file:///tmp/_shoot.html"); time.sleep(6)
     pg.screenshot(path=out, full_page=True); b.close()
 print(out)

@@ -13,9 +13,9 @@
   <a href="#contributing">Contributing</a>
 </p>
 
-The toolchain is the base of Xwift. It is Xwift's own fork of Swift and LLVM, modified by the Xwift project to target macOS, Windows, Linux, Android, iOS and Web from one source tree.
+The toolchain is the base of Xwift. It is planned as Xwift's own fork of Swift and LLVM, targeting macOS, Windows, Linux, Android, iOS and the web from one source tree.
 
-This repository starts as the proof of concept: one package, one source tree, built and run on four targets in CI. The fork replaces the stock toolchain in a later stage.
+This repository is the proof of concept: one package, one source tree, built and run on four targets in CI with stock Swift 6.4.1. The fork replaces the stock toolchain in a later phase. The repository is private for now.
 
 <a id="install"></a>
 <p align="center">
@@ -63,18 +63,9 @@ Hello from Xwift on linux-x86_64 (64-bit)!
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/assets/platforms-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset=".github/assets/platforms-light.svg">
-    <img src=".github/assets/platforms-light.svg" width="100%" alt="Platforms">
+    <img src=".github/assets/platforms-light.svg" width="100%" alt="macOS: working, CI: build, test, run; Windows: working, CI: build, test, run; Linux: working, CI: build, test, run; Android: planned, Not in CI yet; iOS: planned, Not in CI yet; Web: working, WebAssembly (WASI). CI: build, run">
   </picture>
 </p>
-
-| Platform | Status | Notes |
-| --- | --- | --- |
-| macOS | working | CI: build, test, run |
-| Windows | working | CI: build, test, run |
-| Linux | working | CI: build, test, run |
-| Android | planned | Not in CI yet |
-| iOS | planned | Not in CI yet |
-| Web | working | WebAssembly (WASI). CI: build, run |
 
 <a id="status"></a>
 <p align="center">
