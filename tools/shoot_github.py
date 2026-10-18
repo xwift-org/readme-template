@@ -7,7 +7,7 @@ with sync_playwright() as p:
     b = p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
     for scheme in ("light", "dark"):
         ctx = b.new_context(viewport={"width": 1280, "height": 1000}, color_scheme=scheme, device_scale_factor=1)
-        pg = ctx.new_page(); pg.goto(url, wait_until="networkidle", timeout=90000)
+        pg = ctx.new_page(); pg.goto(url, wait_until="load", timeout=120000); time.sleep(3)
         h = pg.evaluate("document.body.scrollHeight")
         for y in range(0, h + 1000, 500):
             pg.evaluate(f"window.scrollTo(0,{y})"); time.sleep(0.25)
@@ -17,6 +17,9 @@ with sync_playwright() as p:
         el = pg.query_selector("article.markdown-body") or pg.query_selector(".markdown-body")
         box = el.bounding_box(); print(scheme, "readme box", box)
         el.screenshot(path=f"{pre}-{scheme}.png")
+        r = pg.evaluate("""(a) => { const i = a.querySelector('img'), b = i.getBoundingClientRect(), c = a.getBoundingClientRect();
+                           return {x: b.x - c.x, y: b.y - c.y, w: b.width, h: b.height}; }""", el)
+        import json; json.dump(r, open(f"{pre}-{scheme}.json", "w")); print(scheme, "first image", r)
         pg.screenshot(path=f"{pre}-page-{scheme}.png", full_page=True)
         ctx.close()
     b.close()
