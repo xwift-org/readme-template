@@ -1,273 +1,345 @@
-"""Artwork compositions for the Xwift org profile and repo banners."""
+"""Compositions: every block of the swift.org layout, redrawn for a README column.
+
+All blocks are W (980) units wide: swift.org's content column. Values in comments are swift.org's
+computed styles at 1280 px (see swiftorg-spec.md).
+"""
 import math
-import art
-from render_base import THEMES, PAL, BIRD, SANS, MONO, bird, svg_doc, fade_in, esc, PLATFORM_ORDER
+from render_base import (W, THEMES, FOOTER, BUTTON, GH_BG, Text, baseline, svg_doc, stops, fill_attr, rgba, esc, bird)
+from art import ribbon, wave, grain, rrect, icon
 
-def cols(mode):
-    v = PAL["violet"] if mode == "light" else "#9C85FF"
-    return PAL["ion"], v, PAL["pulse"], PAL["ember"]
+# ---------------------------------------------------------------- shared pieces
+PALETTES = {  # ribbon colours, picked to sit in swift.org's warm/violet family without reusing its files
+    "pink":   [(0, "#ffd0ec"), (0.45, "#f99ad4"), (1, "#f070c0")],
+    "gold":   [(0, "#ffd23a"), (0.5, "#ffb000"), (1, "#ff7a00")],
+    "flame":  [(0, "#ffc94a"), (0.6, "#ff8a1f"), (1, "#f2542d")],
+    "white":  [(0, "#ffffff"), (1, "#fff1e6")],
+    "violet": [(0, "#b49cff"), (0.5, "#8a63f0"), (1, "#6a43d9")],
+    "lilac":  [(0, "#f3c6ff"), (1, "#b48cf2")],
+    "sky":    [(0, "#bfe8ff"), (1, "#6fb8ff")],
+}
 
-def frame(W, H, t, defs, body, label, radius=20, cid="clip", bg=None):
-    defs.append(f'<clipPath id="{cid}"><rect width="{W}" height="{H}" rx="{radius}"/></clipPath>')
-    inner = (f'<defs>{"".join(defs)}</defs><g clip-path="url(#{cid})"><rect width="{W}" height="{H}" fill="{bg or t["bg"]}"/>'
-             f'{"".join(body)}</g><rect x="0.5" y="0.5" width="{W-1}" height="{H-1}" rx="{radius}" fill="none" stroke="{t["rule"]}"/>')
-    return svg_doc(W, H, label, inner)
+def nav(t, theme, mode, items, cta, y=0, h=67):
+    """swift.org .site-navigation: 67 px bar, translucent, 19 px items with 12/15 px pill padding."""
+    th = THEMES[theme]; out = []
+    col, a = th["nav_bg"]
+    out.append(f'<rect x="0" y="{y}" width="{W}" height="{h}" fill="{col}" fill-opacity="{a}"/>')
+    if th["nav_shadow"]:
+        out.append(f'<rect x="0" y="{y + h}" width="{W}" height="1" fill="#000" fill-opacity="{th["nav_shadow"] * 1.6:.2f}"/>')
+    b, bw = bird(20, y + 16, 34, mode)
+    out.append(b)
+    out.append(t.run("Xwift", "text-500", 27, 20 + bw + 6, y + 43, th["nav_text"], track=-0.01))
+    # items right-aligned to x = 960, each a 5 px link pad + 15 px span pad
+    x = W - 20
+    labels = list(items) + ["|", cta]
+    widths = []
+    for lab in labels:
+        widths.append(2 + 30 if lab == "|" else t.width(lab, "text-400", 19) + 40)
+    x -= sum(widths)
+    for lab, wd in zip(labels, widths):
+        if lab == "|":
+            out.append(f'<rect x="{x + 15:.1f}" y="{y + 24.5}" width="2" height="18" fill="{th["nav_text"]}"/>')
+        else:
+            out.append(t.run(lab, "text-400", 19, x + 20, y + 40, th["nav_text"]))
+        x += wd
+    return "".join(out)
 
-def shade(mode): return 0.1 if mode == "light" else 0.28
-def fop(mode): return 0.2 if mode == "light" else 0.32
-
-def add_grain(defs, body, W, H, mode, uid="gr"):
-    defs.append(art.grain(uid, 0.06 if mode == "light" else 0.1))
-    body.append(f'<rect width="{W}" height="{H}" filter="url(#{uid})"/>')
-
-def halo(defs, t, uid="halo"):
-    defs.append(f'<radialGradient id="{uid}"><stop offset="0" stop-color="{t["bg"]}" stop-opacity="0.95"/>'
-                f'<stop offset="1" stop-color="{t["bg"]}" stop-opacity="0"/></radialGradient>')
-
-# ------------------------------------------------------------------ org hero
-def org_hero(mode):
-    t = THEMES[mode]; W, H = 960, 640
-    I, V, N, E = cols(mode)
+def swoop_band(uid, theme, y, h, seed=0, kind="hero", reveal=None):
+    """The wide multi-strand swoop that closes each swift.org section (swoop-0/1/2)."""
+    rows = {  # (palette, y fraction, width, wave count, phase)
+        "hero":  [("gold", 0.20, 84, 1.2, 0.2), ("white", 0.34, 34, 1.3, 2.4), ("violet", 0.47, 120, 1.0, 0.9),
+                  ("pink", 0.62, 76, 1.1, 1.8), ("white", 0.72, 30, 1.0, 1.1), ("gold", 0.84, 80, 0.9, 3.0)],
+        "cool":  [("sky", 0.24, 60, 1.0, 0.5), ("violet", 0.42, 110, 0.9, 1.4), ("white", 0.36, 26, 1.2, 2.2),
+                  ("flame", 0.60, 80, 1.1, 2.9), ("pink", 0.74, 54, 1.0, 0.8), ("gold", 0.86, 50, 0.8, 1.9)],
+        "warm":  [("lilac", 0.24, 70, 1.0, 1.0), ("gold", 0.42, 110, 0.9, 1.7), ("white", 0.36, 28, 1.1, 2.6),
+                  ("flame", 0.58, 84, 1.0, 0.3), ("violet", 0.72, 60, 1.2, 2.0), ("pink", 0.84, 44, 0.9, 2.8)],
+    }[kind]
     defs, body = [], []
-    fo = fop(mode)
-    d, b = art.fields("hf", W, H, [(120, 60, 230, V, fo), (860, 90, 220, I, fo), (760, 640, 260, E, fo),
-                                   (180, 620, 220, N, fo * 0.9), (480, 330, 180, V, fo * 0.4)], blur=70)
-    defs.append(d); body.append(b)
-    for uid, pts, w, c, tw, ph in [("b1", [(-60, 140), (260, 40), (520, 300), (W + 60, 120)], (120, 160), [V, I], 0.8, 0.2),
-                                   ("b2", [(-60, 470), (300, 330), (640, 560), (W + 60, 380)], (140, 110), [N, E], 0.7, 1.0)]:
-        dd, bb = art.ribbon(uid, pts, w, c, twist=tw, phase=ph, opacity=0.22 if mode == "light" else 0.3, sheen=False, shade=0)
-        defs.append(dd); body.append(bb)
-    bh = 118; bw = BIRD["viewBox"][2] / BIRD["viewBox"][3] * bh; bx, by = W / 2 - bw / 2, 52
-    ox, oy = W / 2 + 30, by + bh * 0.42
-    R = [("r1", [(ox, oy), (ox + 150, oy - 90), (ox + 330, oy - 150), (W + 40, oy - 40)], (10, 96), [E, N, V], 1.2, 0.2, 0.2),
-         ("r2", [(ox, oy + 8), (ox + 170, oy + 40), (ox + 320, oy - 30), (W + 30, oy + 150)], (6, 70), [N, E], 1.6, 0.6, 0.45),
-         ("r3", [(ox, oy + 14), (ox + 120, oy + 120), (ox + 300, oy + 40), (W - 10, H * 0.62)], (4, 44), [V, I], 0.9, 0.1, 0.65),
-         ("l1", [(ox - 60, oy), (ox - 230, oy - 120), (ox - 420, oy - 120), (-40, oy + 10)], (10, 92), [I, V, N], 1.3, 0.4, 0.3),
-         ("l2", [(ox - 60, oy + 10), (ox - 250, oy + 30), (ox - 380, oy + 140), (-30, H * 0.66)], (6, 60), [V, I], 1.1, 0.9, 0.5),
-         ("g1", [(-40, H - 20), (240, H - 230), (620, H + 40), (W + 40, H - 190)], (110, 70), [I, V, N, E], 1.4, 0.3, 0.8),
-         ("g2", [(-40, H - 140), (300, H - 10), (700, H - 260), (W + 40, H - 40)], (80, 120), [N, E, V], 1.1, 1.2, 0.95),
-         ("g3", [(-40, H - 70), (200, H - 120), (520, H - 150), (W + 40, H - 250)], (30, 60), [E, N], 2.2, 0.0, 1.1)]
-    for uid, pts, w, c, tw, ph, dl in R:
-        dd, bb = art.ribbon(uid, pts, w, c, twist=tw, phase=ph, opacity=0.92 if uid[0] != "g" else 0.85,
-                            anim=art.enter(dl, dx=-(pts[3][0] - pts[0][0]) * 0.04), strands=2, shade=shade(mode))
-        defs.append(dd); body.append(bb)
-    body.append(art.flight(f"M{ox} {oy} C{ox+200} {oy-200} {ox+380} {oy-20} {W} {oy-110}", t["text"], 0.35))
-    body.append(art.flight(f"M{ox-60} {oy} C{ox-260} {oy-220} {ox-460} {oy-10} 0 {oy-120}", t["text"], 0.35, dur=9))
-    add_grain(defs, body, W, H, mode)
-    halo(defs, t)
-    body.append(f'<ellipse cx="{W/2}" cy="{by+bh/2}" rx="120" ry="95" fill="url(#halo)"/>')
-    body.append(bird(bx, by, bh, mode=mode)[0])
-    body.append(f'<ellipse cx="{W/2}" cy="352" rx="430" ry="100" fill="url(#halo)"/>')
-    body.append(f'<g>{fade_in(0.5,0.6)}<text x="{W/2}" y="300" text-anchor="middle" font-family="{SANS}" font-size="15" font-weight="600" letter-spacing="2.4" fill="{t["accent"]}">XWIFT</text></g>')
-    body.append(f'<g>{fade_in(0.7,0.6)}<text x="{W/2}" y="364" text-anchor="middle" font-family="{SANS}" font-size="58" font-weight="700" letter-spacing="-2" fill="{t["text"]}">Write once. Run everything.</text></g>')
-    body.append(f'<g>{fade_in(0.9,0.6)}<text x="{W/2}" y="406" text-anchor="middle" font-family="{SANS}" font-size="20" letter-spacing="-0.2" fill="{t["muted"]}">A cross-platform toolchain, UI framework and system APIs.</text></g>')
-    return frame(W, H, t, defs, body, "Xwift. Write once. Run everything. A cross-platform toolchain, UI framework and system APIs.")
+    for i, (pal, fy, wd, k, ph) in enumerate(rows):
+        pts = [(x, yy - (x / W - 0.5) * h * 0.45) for x, yy in wave(-80, W + 80, y + h * fy, h * 0.13, 0.55 * k, ph + seed, 9)]
+        d, b = ribbon(f"{uid}{i}", pts, wd, PALETTES[pal], twists=0.8 + 0.3 * i % 1.2, phase=0.2 * i,
+                      strands=22, seed=seed * 10 + i + 3, ends=(0.0, 0.0), n=120,
+                      body_opacity=0.9, pinch=0.5, hi=0.2 if pal != "white" else 0.0, haze=0.45, scatter=0.22,
+                      reveal=(reveal[0] + 0.12 * i, reveal[1]) if reveal else None)
+        defs.append(d); body.append(b)
+    return "".join(defs), "".join(body)
 
-# ------------------------------------------------------------- platform strip
-def org_platforms(mode):
-    t = THEMES[mode]; W, H = 960, 210
-    I, V, N, E = cols(mode)
-    defs, body = [], []
-    d, b = art.fields("pf", W, H, [(80, 200, 160, I, fop(mode)), (480, 230, 180, V, fop(mode) * 0.8), (880, 200, 160, E, fop(mode))], blur=50)
-    defs.append(d); body.append(b)
-    yc = 150
-    fr = art.wave_frames(-20, W + 20, yc, 16, 2.5, phase=0.6)
-    dd, bb = art.ribbon("pw", None, 46, [I, V, N, E], twist=5.0, phase=0.4, frames_in=fr, strands=2, shade=shade(mode), env_pow=0.25,
-                        anim=art.enter(0.1, dx=-30))
-    defs.append(dd); body.append(bb)
-    fr2 = art.wave_frames(-20, W + 20, yc + 12, 22, 1.5, phase=2.2)
-    dd, bb = art.ribbon("pw2", None, 18, [E, N, V, I], twist=3.0, phase=1.0, frames_in=fr2, shade=0, sheen=False, opacity=0.55, env_pow=0.3)
-    defs.append(dd); body.append(bb)
-    n = len(PLATFORM_ORDER); cw = W / n
-    nodecol = [I, V, N, E, V, I]
-    for i, p in enumerate(PLATFORM_ORDER):
-        cx = cw * i + cw / 2
-        y = yc + 16 * math.sin(2 * math.pi * 2.5 * ((cx + 20) / (W + 40)) + 0.6)
-        if i:
-            body.append(f'<line x1="{cw*i:.1f}" y1="36" x2="{cw*i:.1f}" y2="96" stroke="{t["rule"]}"/>')
-        body.append(f'<text x="{cx:.1f}" y="52" text-anchor="middle" font-family="{MONO}" font-size="11" letter-spacing="1" fill="{t["muted"]}">{i+1:02d}</text>')
-        body.append(f'<text x="{cx:.1f}" y="84" text-anchor="middle" font-family="{SANS}" font-size="21" font-weight="600" letter-spacing="-0.4" fill="{t["text"]}">{p}</text>')
-        body.append(f'<line x1="{cx:.1f}" y1="98" x2="{cx:.1f}" y2="{y-9:.1f}" stroke="{nodecol[i]}" stroke-opacity="0.6" stroke-dasharray="2 3"/>')
-        body.append(f'<g>{fade_in(0.4 + 0.15*i, 0.3, 0.4 + 0.15*n + 0.3)}<circle cx="{cx:.1f}" cy="{y:.1f}" r="9" fill="{t["panel"]}" stroke="{nodecol[i]}" stroke-width="2.5"/>'
-                    f'<circle cx="{cx:.1f}" cy="{y:.1f}" r="3.5" fill="{nodecol[i]}"/></g>')
-    add_grain(defs, body, W, H, mode, "pg")
-    return frame(W, H, t, defs, body, "Targets: " + ", ".join(PLATFORM_ORDER) + ".", radius=16, cid="pc", bg=t["panel"])
+def fade(uid, y0, y1, color, up=False):
+    a, b = (0, 1) if not up else (1, 0)
+    return (f'<linearGradient id="{uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{color}" stop-opacity="{a}"/>'
+            f'<stop offset="1" stop-color="{color}" stop-opacity="{b}"/></linearGradient>',
+            f'<rect x="0" y="{y0}" width="{W}" height="{y1 - y0}" fill="url(#{uid})"/>')
 
-# ------------------------------------------------------------------- divider
-def divider(mode, seed="xwift", palette=None):
-    t = THEMES[mode]; W, H = 960, 96
-    I, V, N, E = cols(mode)
-    r = art.rng(seed)
-    c = palette or [I, V, N, E]
-    if r.random() < 0.5: c = list(reversed(c))
-    defs, body = [], []
-    defs.append(f'<linearGradient id="dfade" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.12" stop-color="#fff"/>'
-                f'<stop offset="0.88" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-                f'<mask id="dm"><rect width="{W}" height="{H}" fill="url(#dfade)"/></mask>')
-    fr = art.wave_frames(0, W, H / 2, 10 + r.random() * 8, 1.2 + r.random(), phase=r.random() * 6)
-    dd, bb = art.ribbon("dv", None, 40, c, twist=3 + r.randint(0, 3), phase=r.random(), frames_in=fr, strands=3, shade=shade(mode), env_pow=0.35)
-    defs.append(dd)
-    fr2 = art.wave_frames(0, W, H / 2 + 4, 18, 0.8 + r.random(), phase=r.random() * 6)
-    d2, b2 = art.ribbon("dv2", None, 14, list(reversed(c)), twist=2, frames_in=fr2, sheen=False, shade=0, opacity=0.5, env_pow=0.35)
-    defs.append(d2)
-    body.append(f'<g mask="url(#dm)">{b2}{bb}</g>')
-    return svg_doc(W, H, "", f'<defs>{"".join(defs)}</defs>{"".join(body)}')
+def button(t, label, cx, y, size=35, padx=81, pady=15, radius=43):
+    """swift.org install button: 35 px / 42 px line, 15/81 px padding, 43 px radius, #ff7f00 -> #f05238."""
+    tw = t.width(label, "display-400", size, track=0)
+    w = tw + 2 * padx; h = size * 1.2 + 2 * pady; x = cx - w / 2
+    d = (f'<linearGradient id="btn" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{BUTTON[0]}"/>'
+         f'<stop offset="1" stop-color="{BUTTON[1]}"/></linearGradient>')
+    b = rrect(x, y, w, h, radius, 'fill="url(#btn)"') + t.run(label, "display-400", size, cx, baseline(y + pady, size * 1.2, size), "#ffffff", "middle", track=0)
+    return d, b, h
 
-# ----------------------------------------------------------- project cards
-ORG_PROJECTS = [
-    ("01", "toolchain", "xwift", "Compiler and toolchain. Xwift's own fork of Swift and LLVM.", "ember"),
-    ("02", "ui framework", "xwift-ui", "One UI framework for every Xwift target.", "violet"),
-    ("03", "system apis", "xwift-system", "System APIs with one shape on every platform.", "ion"),
-    ("04", "package manager", "xwift-pm", "Packages, dependencies and builds.", "pulse"),
+# ---------------------------------------------------------------- hero (#what-is-swift)
+HERO_RIBBONS = [  # (palette, points, width, twists, phase, seed)
+    ("lilac", [(-70, 700), (0, 600), (60, 480), (95, 380)], 44, 0.5, 0.3, 15),
+    ("pink",  [(-40, 660), (40, 520), (70, 380), (45, 250), (80, 130), (170, 62), (285, 72), (365, 140), (370, 225), (310, 272)], 92, 1.3, 0.12, 11),
+    ("white", [(-40, 700), (75, 570), (140, 430), (175, 295), (230, 175), (325, 105), (440, 82)], 34, 1.1, 0.35, 12),
+    ("gold",  [(-70, 580), (60, 480), (150, 360), (220, 235), (295, 140), (395, 85), (500, 92), (575, 145), (615, 210)], 84, 1.2, 0.05, 13),
 ]
 
-def _illo(kind, x, y, w, h, mode, uid):
-    I, V, N, E = cols(mode)
-    defs, body = [], []
-    if kind == "toolchain":   # layered bands: source descending through the stages
-        for k, (c, ph) in enumerate([([E, N], 0.2), ([N, V], 0.9), ([V, I], 1.6)]):
-            yy = y + 40 + k * 34
-            dd, bb = art.ribbon(f"{uid}{k}", [(x - 20, yy + 50), (x + w * 0.35, yy - 50), (x + w * 0.6, yy + 70), (x + w + 20, yy - 20)],
-                                (18, 34), c, twist=1.2, phase=ph, strands=1, shade=shade(mode), anim=art.enter(0.2 * k, dx=-12))
-            defs.append(dd); body.append(bb)
-    elif kind == "ui framework":  # floating panels
-        for k, (dx, dy, rot, c1, c2) in enumerate([(0.30, 26, -8, V, I), (0.46, 48, 4, N, V), (0.62, 30, 12, I, V)]):
-            px, py = x + w * dx, y + dy
-            defs.append(f'<linearGradient id="{uid}p{k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{c1}"/><stop offset="1" stop-color="{c2}"/></linearGradient>')
-            body.append(f'<g transform="rotate({rot} {px+80} {py+55})" opacity="0.92">{art.enter(0.15*k, dy=10)}'
-                        f'<rect x="{px}" y="{py}" width="160" height="110" rx="14" fill="url(#{uid}p{k})" fill-opacity="0.85"/>'
-                        f'<rect x="{px+14}" y="{py+14}" width="54" height="6" rx="3" fill="#fff" fill-opacity="0.7"/>'
-                        f'<rect x="{px+14}" y="{py+30}" width="96" height="6" rx="3" fill="#fff" fill-opacity="0.45"/>'
-                        f'<rect x="{px+14}" y="{py+72}" width="40" height="22" rx="11" fill="#fff" fill-opacity="0.8"/></g>')
-    elif kind == "system apis":  # arcs and nodes from one corner
-        cx, cy = x + w + 10, y + h + 30
-        for k, c in enumerate([I, V, I, N]):
-            rr = 70 + k * 46
-            defs.append(f'<linearGradient id="{uid}a{k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="{c}" stop-opacity="0.15"/><stop offset="1" stop-color="{c}"/></linearGradient>')
-            body.append(f'<path d="M{cx-rr} {cy} A{rr} {rr} 0 0 1 {cx} {cy-rr}" fill="none" stroke="url(#{uid}a{k})" stroke-width="{10-k*1.5}" stroke-linecap="round">{art.enter(0.15*k)}</path>')
-            for a in (0.25, 0.55, 0.8):
-                ang = math.pi + a * math.pi / 2
-                nx, ny = cx + rr * math.cos(ang), cy + rr * math.sin(ang)
-                body.append(f'<circle cx="{nx:.1f}" cy="{ny:.1f}" r="4" fill="{c}"/>')
-        body.append(art.flight(f"M{x+20} {y+150} C{x+w*0.3} {y+40} {x+w*0.6} {y+120} {x+w} {y+20}", I, 0.6))
-    else:  # package manager: isometric cubes
-        def cube(px, py, s, c1, c2, c3, k):
-            h = s * 0.5
-            top = f"M{px} {py-h}L{px+s*0.866} {py-h-h}L{px+s*1.732} {py-h}L{px+s*0.866} {py}Z"
-            left = f"M{px} {py-h}L{px+s*0.866} {py}L{px+s*0.866} {py+s}L{px} {py+s-h}Z"
-            right = f"M{px+s*0.866} {py}L{px+s*1.732} {py-h}L{px+s*1.732} {py+s-h}L{px+s*0.866} {py+s}Z"
-            return (f'<g>{art.enter(0.12*k, dy=-14)}<path d="{top}" fill="{c1}"/><path d="{left}" fill="{c2}"/><path d="{right}" fill="{c3}"/>'
-                    f'<path d="{top}{left}{right}" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="0.8"/></g>')
-        s = 36; bx, by = x + w * 0.42, y + 80
-        for k, (dx, dy) in enumerate([(0, -1.0), (-1, -0.5), (1, -0.5), (0, 0), (-1, 0.5), (1, 0.5), (0, 1.0)]):
-            body.append(cube(bx + dx * s * 0.866, by + dy * s, s, N if k % 2 == 0 else E, V, N if k % 2 else E, k))
-    return defs, body
+PAD = 20  # swift.org .site-navigation .wrapper side padding
 
-def org_projects(mode):
-    t = THEMES[mode]; W, H = 960, 600; g = 16
-    cw, ch = (W - g) / 2, (H - g) / 2
-    defs, body = [], []
-    for i, (num, kind, repo, desc, col) in enumerate(ORG_PROJECTS):
-        x = (i % 2) * (cw + g); y = (i // 2) * (ch + g)
-        c = PAL[col] if not (mode == "dark" and col == "violet") else t["second"]
-        cid = f"cc{i}"
-        defs.append(f'<clipPath id="{cid}"><rect x="{x:.1f}" y="{y:.1f}" width="{cw:.1f}" height="{ch:.1f}" rx="16"/></clipPath>')
-        fd, fb = art.fields(f"cf{i}", W, H, [(x + cw * 0.8, y + 30, 150, c, fop(mode) * 1.2), (x + 20, y + ch, 120, c, fop(mode) * 0.5)], blur=45)
-        defs.append(fd)
-        idefs, ibody = _illo(kind, x, y, cw, 170, mode, f"il{i}")
-        defs += idefs
-        body.append(f'<g clip-path="url(#{cid})"><rect x="{x:.1f}" y="{y:.1f}" width="{cw:.1f}" height="{ch:.1f}" fill="{t["panel"]}"/>{fb}{"".join(ibody)}'
-                    f'<rect x="{x:.1f}" y="{y+150:.1f}" width="{cw:.1f}" height="{ch-150:.1f}" fill="url(#cardfade)"/></g>'
-                    f'<rect x="{x+0.5:.1f}" y="{y+0.5:.1f}" width="{cw-1:.1f}" height="{ch-1:.1f}" rx="16" fill="none" stroke="{t["rule"]}"/>'
-                    f'<text x="{x+28:.1f}" y="{y+196:.1f}" font-family="{MONO}" font-size="12" letter-spacing="0.8" fill="{c}">{num}  {kind.upper()}</text>'
-                    f'<text x="{x+27:.1f}" y="{y+238:.1f}" font-family="{SANS}" font-size="34" font-weight="700" letter-spacing="-1.1" fill="{t["text"]}">{repo}</text>'
-                    f'<text x="{x+28:.1f}" y="{y+268:.1f}" font-family="{SANS}" font-size="16" fill="{t["muted"]}">{esc(desc)}</text>')
-    defs.append(f'<linearGradient id="cardfade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{t["panel"]}" stop-opacity="0"/>'
-                f'<stop offset="0.35" stop-color="{t["panel"]}" stop-opacity="0.92"/><stop offset="1" stop-color="{t["panel"]}"/></linearGradient>')
-    return svg_doc(W, H, "Projects: " + "; ".join(f"{r}, {k}" for _, k, r, _, _ in ORG_PROJECTS), f'<defs>{"".join(defs)}</defs>{"".join(body)}')
+def hero(theme, mode, cfg):
+    """cfg: title (list of lines), sub, button, caption, create, cards [(icon, title, text)], chips [label],
+    nav_items, nav_cta. Geometry is swift.org's hero at 1280 px, shifted into the 980 px column."""
+    th = THEMES[theme]; t = Text(); defs = []; body = []
+    H = 1135
+    # background: swift.org --homepage-hero-bg (179deg)
+    defs.append(f'<linearGradient id="hbg" x1="0.49" y1="0" x2="0.51" y2="1">{stops(th["hero_bg"])}</linearGradient>')
+    body.append(f'<rect width="{W}" height="{H}" fill="url(#hbg)"/>')
+    gd, gb = grain("hgrain", W, H, 0.05 if theme == "light" else 0.07)
+    defs.append(gd); body.append(gb)
+    # ribbons (drawn in once, like swift.org's hero canvas animation)
+    for i, (pal, pts, wd, tw, ph, sd) in enumerate(HERO_RIBBONS):
+        d, b = ribbon(f"hr{i}", pts, wd, PALETTES[pal], twists=tw, phase=ph, seed=sd, strands=30,
+                      shade={"pink": "#d1489e", "white": "#e8a0c8", "lilac": "#9a63c9"}.get(pal, "#e0560a"), reveal=(0.15 * i, 1.7),
+                      body_opacity=0.95, pinch=0.4, hi=0.38 if pal != "white" else 0.0, haze=0.35, scatter=0.2)
+        defs.append(d); body.append(b)
+    # navigation bar over the art
+    body.append(nav(t, theme, mode, cfg["nav_items"], cfg["nav_cta"]))
+    # title-0: 56/67.2, 600, centred, top 302, margin-bottom 30
+    for i, line in enumerate(cfg["title"]):
+        body.append(t.run(line, "display-600", 56, W / 2, baseline(302 + 67.2 * i, 67.2, 56), th["hero_text"], "middle"))
+    ty = 302 + 67.2 * len(cfg["title"])
+    # sub-text h2: 32/51.2, 400, margin 20 0 60
+    sy = ty + 30 + 20 - 0  # swift.org: h1 margin 30 + h2 margin-top 20 ... collapsed -> 467 for two lines
+    sy = 467 + (ty - 436.4)
+    body.append(t.run(cfg["sub"], "display-400", 32, W / 2, baseline(sy, 51.2, 32), th["hero_text"], "middle"))
+    by = sy + 51.2 + 60
+    bd, bb, bh = button(t, cfg["button"], W / 2, by)
+    defs.append(bd); body.append(bb)
+    cy = by + bh + 11
+    body.append(t.run(cfg["caption"], "text-500", 17, W / 2, baseline(cy, 27.2, 17), th["caption"], "middle", opacity=0.66))
+    hy = cy + 27.2 + 70
+    body.append(t.run(cfg["create"], "display-400", 32, W / 2, baseline(hy, 51.2, 32), th["text"], "middle"))
+    # bottom swoop (swoop-0) sits behind the cards' lower half
+    sd_, sb_ = swoop_band("hs", theme, 880, 300, seed=0.3, kind="hero", reveal=(0.6, 1.8))
+    defs.append(sd_); body.append(sb_)
+    # primary cards: 313x128, gap 20, radius 36, padding 25, rgba(255,177,100,.9) / #23344a
+    py = hy + 51.2 + 29
+    n = len(cfg["cards"]); cw = (W - 2 * PAD - 20 * (n - 1)) / n
+    for i, (ic, title, text) in enumerate(cfg["cards"]):
+        x = PAD + i * (cw + 20)
+        body.append(rrect(x, py, cw, 128, 36, fill_attr(th["card_bg"])))
+        body.append(icon(ic, x + 25, py + 25 + 7, 26, th["card_text"], 1.7))
+        body.append(t.run(title, "text-600", 24, x + 62, baseline(py + 25, 38.4, 24), th["card_text"]))
+        tb, _ = t.block(text, "text-400", 14, 19.6, x + 62, py + 25 + 38.4 + 1, cw - 62 - 25, th["card_text"])
+        body.append(tb)
+    # secondary chips: 46 px, gap 15, radius 36, 14 px
+    qy = py + 128 + 20
+    m = len(cfg["chips"]); qw = (W - 2 * PAD - 15 * (m - 1)) / m
+    for i, lab in enumerate(cfg["chips"]):
+        x = PAD + i * (qw + 15)
+        body.append(rrect(x, qy, qw, 46, 36, fill_attr(th["card_bg"])))
+        body.append(t.run(lab, "text-400", 14, x + qw / 2, baseline(qy + 12, 22.4, 14), th["card_text"], "middle"))
+    # fade the last rows into GitHub's page colour so the next block continues the page
+    fd, fb = fade("hfade", H - 60, H, GH_BG[theme])
+    defs.append(fd); body.append(fb)
+    label = " ".join(cfg["title"]) + " " + cfg["sub"]
+    return svg_doc(W, H, label, "".join(body), t, "".join(defs))
 
-# --------------------------------------------------------------- footer band
-def footer_band(mode, seed="xwift-org", caption="Write once. Run everything."):
-    t = THEMES[mode]; W, H = 960, 300
-    I, V, N, E = cols(mode)
-    r = art.rng(seed)
-    defs, body = [], []
-    d, b = art.fields("ff", W, H, [(160, 300, 240, I, fop(mode)), (480, 330, 260, V, fop(mode)), (820, 300, 240, E, fop(mode)), (480, 60, 140, N, fop(mode) * 0.5)], blur=60)
+# ---------------------------------------------------------------- pillar intro (.pillar-intro)
+def intro(theme, text):
+    """24 px / 1.45, centred, 720 px measure (swift.org .pillar-wrapper)."""
+    th = THEMES[theme]; t = Text()
+    top = 64
+    tb, h = t.block(text, "mid-400", 24, 34.8, W / 2, top, 720, th["text"], "middle")
+    H = top + h + 40
+    return svg_doc(W, H, text, tb, t)
+
+# ---------------------------------------------------------------- callout header (.callout .text)
+def callout_head(theme, title, subtitle, align="start", top=60):
+    """title-1 48/57.6 500 (margin -4 0 3), subtitle 24/28.8 500 (margin-bottom 22), callout padding 17."""
+    th = THEMES[theme]; t = Text()
+    x = 17 if align == "start" else W / 2
+    y = top - 4
+    b = t.run(title, "display-500", 48, x, baseline(y, 57.6, 48), th["text"], align)
+    y += 57.6 + 3
+    b += t.run(subtitle, "mid-500", 24, x, baseline(y, 28.8, 24), th["text"], align)
+    H = y + 28.8 + 6
+    return svg_doc(W, H, f"{title}. {subtitle}", b, t)
+
+# ---------------------------------------------------------------- code card (pre.highlight)
+import re as _re
+SWIFT_KW = set("import func let var struct enum case class protocol extension public private internal static return if else guard for in while "
+               "switch default mutating init self Self some any async await throws try where true false nil".split())
+def tokens(line, lang):
+    """Tiny highlighter with swift.org's syntax roles."""
+    if lang == "shell":
+        if line.startswith("$ "):
+            return [("prompt", "$ "), ("plain", line[2:])]
+        return [("comment" if line.startswith("#") else "output", line)]
+    if lang == "json":
+        out = []
+        for m in _re.finditer(r'("(?:[^"\\]|\\.)*")(\s*:)?|([{}\[\],:])|(\s+)|([^\s"{}\[\],:]+)', line):
+            if m.group(1): out.append(("type" if m.group(2) else "string", m.group(1)));  m.group(2) and out.append(("punct", m.group(2)))
+            elif m.group(3): out.append(("punct", m.group(3)))
+            else: out.append(("plain", m.group(0)))
+        return out
+    out = []
+    pat = r'(//.*$)|("(?:[^"\\]|\\.)*")|(#\w+)|(@\w+)|(\b\d[\d_.]*\b)|(\b[A-Za-z_]\w*\b)(\s*\()?|(\.[a-z_]\w*)|([^\w\s])|(\s+)'
+    for m in _re.finditer(pat, line):
+        if m.group(1): out.append(("comment", m.group(1)))
+        elif m.group(2): out.append(("string", m.group(2)))
+        elif m.group(3): out.append(("keyword", m.group(3)))
+        elif m.group(4): out.append(("keyword", m.group(4)))
+        elif m.group(5): out.append(("number", m.group(5)))
+        elif m.group(6):
+            w = m.group(6)
+            role = "keyword" if w in SWIFT_KW else "type" if w[0].isupper() else "call" if m.group(7) else "plain"
+            out.append((role, w))
+            if m.group(7): out.append(("punct", m.group(7)))
+        elif m.group(8): out.append(("call", m.group(8)))
+        else: out.append(("punct" if m.group(9) else "plain", m.group(0)))
+    return out
+
+def code_card(theme, code, lang="swift", label="Code example"):
+    """pre: padding 28, 1 px border #d5d5d5 / #575757, radius 20, 14/21 code, bg rgba(255,255,255,.5) / #111727."""
+    th = THEMES[theme]; syn = th["syntax"]; t = Text()
+    lines = code.strip("\n").split("\n")
+    x0, top = 17, 0
+    w = W - 34; h = 56 + 21 * len(lines) + 2
+    b = [rrect(x0 + 0.5, top + 0.5, w - 1, h - 1, 20, fill_attr(th["code_bg"]) + f' stroke="{th["code_border"]}"')]
+    cw = t.width("M", "mono-400", 14)
+    for i, line in enumerate(lines):
+        x = x0 + 29; y = baseline(top + 29 + 21 * i, 21, 14)
+        for role, txt in tokens(line, lang):
+            col = syn.get(role, th["code_text"]) if role not in ("plain", "output") else th["code_text"]
+            if txt.strip():
+                b.append(t.run(txt, "mono-400", 14, x, y, col))
+            x += cw * len(txt)
+    H = h + 26
+    return svg_doc(W, H, label + ":\n" + code.strip(), "".join(b), t)
+
+# ---------------------------------------------------------------- section swoop (swoop-1 / swoop-2)
+def swoop(theme, kind="cool", seed=1.0, tint=None):
+    """A free-standing swoop band between sections. Edges fade to GitHub's page colour.
+    tint: the next pillar's colour, shown softly behind the band."""
+    H = 300; defs = []; body = []
+    if tint:
+        st = THEMES[theme][tint]
+        mid = st[min(1, len(st) - 1)][1]
+        defs.append(f'<radialGradient id="tint" cx="0.5" cy="0.55" r="0.75"><stop offset="0" stop-color="{mid}" stop-opacity="0.55"/>'
+                    f'<stop offset="1" stop-color="{mid}" stop-opacity="0"/></radialGradient>')
+        body.append(f'<rect width="{W}" height="{H}" fill="url(#tint)"/>')
+    d, b = swoop_band(f"sw{kind}", theme, 10, H - 20, seed=seed, kind=kind, reveal=(0.2, 1.8))
     defs.append(d); body.append(b)
-    cx, cy = W / 2, 118
-    palette = [[I, V], [V, N], [N, E], [E, N], [V, I], [I, N], [N, V], [E, V]]
-    for k in range(8):
-        side = -1 if k % 2 == 0 else 1
-        ex = W / 2 + side * (W / 2 + 40)
-        ey = 90 + k * 26 + r.uniform(-10, 10)
-        pts = [(ex, ey), (W / 2 + side * r.uniform(220, 360), ey + r.uniform(-90, 90)), (cx + side * r.uniform(80, 160), cy + r.uniform(-40, 60)), (cx + side * 30, cy)]
-        dd, bb = art.ribbon(f"fr{k}", pts, (r.uniform(30, 60), 2), palette[k], twist=r.uniform(0.8, 1.8), phase=r.random(), opacity=0.85,
-                            strands=1, shade=shade(mode), anim=art.enter(0.1 * k, dx=-side * 20))
-        defs.append(dd); body.append(bb)
-    add_grain(defs, body, W, H, mode, "fg")
-    halo(defs, t, "fh")
-    body.append(f'<ellipse cx="{cx}" cy="{cy}" rx="90" ry="70" fill="url(#fh)"/>')
-    bh = 64; bw = BIRD["viewBox"][2] / BIRD["viewBox"][3] * bh
-    body.append(bird(cx - bw / 2, cy - bh / 2, bh, mode=mode)[0])
-    body.append(f'<ellipse cx="{cx}" cy="226" rx="300" ry="44" fill="url(#fh)"/>')
-    body.append(f'<text x="{cx}" y="222" text-anchor="middle" font-family="{SANS}" font-size="26" font-weight="700" letter-spacing="-0.8" fill="{t["text"]}">{esc(caption)}</text>')
-    body.append(f'<text x="{cx}" y="252" text-anchor="middle" font-family="{MONO}" font-size="12" fill="{t["muted"]}">{esc(seed)}</text>')
-    return frame(W, H, t, defs, body, f"{caption} {seed}", radius=20, cid="fc")
+    f1d, f1b = fade("sf1", 0, 40, GH_BG[theme], up=True); f2d, f2b = fade("sf2", H - 40, H, GH_BG[theme])
+    defs += [f1d, f2d]; body += [f1b, f2b]
+    return svg_doc(W, H, "", "".join(body), None, "".join(defs))
 
-# --------------------------------------------------------------- repo banner
-def repo_banner(cfg, mode):
-    t = THEMES[mode]; W, H = 960, 360
-    I, V, N, E = cols(mode)
-    name, tagline = cfg["name"], cfg["tagline"]
-    r = art.rng(name)
-    defs, body = [], []
-    d, b = art.fields("bf", W, H, [(820, 40, 220, r.choice([I, V]), fop(mode)), (900, 340, 200, r.choice([E, N]), fop(mode)),
-                                   (560, 200, 160, V, fop(mode) * 0.6), (60, 380, 160, I, fop(mode) * 0.5)], blur=60)
+# ---------------------------------------------------------------- closing: pillar-3 band + global footer
+def closing(theme, mode, band, footer):
+    """band: title, subtitle, links [label]. footer: columns [(heading or None, [items])], note.
+    #pillar-3: gradient #e4937f -> #a268c1 36% -> #4b3773, padding 64/40, white 48/24 type, 17 px underlined links.
+    footer.global-footer: #1e162e, padding 96 48 48, headings #fca76c 19.89/700, links 14 px #ebecf0."""
+    th = THEMES[theme]; t = Text(); defs = []; body = []
+    sw = 230  # swoop-2 overlap above the band
+    by = sw
+    bh = 64 + 57.6 - 4 + 3 + 28.8 + 22 + 30 + len(band["links"]) * (27.2 + 14) + 40 + 40
+    st = th["pillar3"]
+    defs.append(f'<linearGradient id="p3" x1="0" y1="0" x2="0" y2="1">{stops(st)}</linearGradient>')
+    # warm lead-in from the page colour into the band's first stop, like pillar-2 handing over to pillar-3
+    defs.append(f'<linearGradient id="lead" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{GH_BG[theme]}"/>'
+                f'<stop offset="0.45" stop-color="{th["pillar2"][-1][1] if theme == "light" else th["pillar2"][-1][1]}" stop-opacity="0.9"/>'
+                f'<stop offset="1" stop-color="{st[0][1]}"/></linearGradient>')
+    body.append(f'<rect width="{W}" height="{by + 2}" fill="url(#lead)"/>')
+    body.append(f'<rect y="{by}" width="{W}" height="{bh}" fill="url(#p3)"/>')
+    d, b = swoop_band("cl", theme, by - 190, 330, seed=2.2, kind="warm", reveal=(0.2, 1.8))
     defs.append(d); body.append(b)
-    sets = [[E, N, V], [V, I], [N, E], [I, V, N], [E, V]]
-    r.shuffle(sets)
-    ox, oy = 290, 74  # wake starts right of the 'Xwift kind' label
-    for k in range(5):
-        ey = r.uniform(-30, H + 30)
-        pts = [(ox, oy + k * 3), (ox + r.uniform(160, 300), oy + r.uniform(-80, 40)), (W * r.uniform(0.6, 0.8), ey + r.uniform(-80, 80)), (W + 40, ey)]
-        w = (2 + k, r.uniform(40, 90) * (1 if k < 3 else 0.6))
-        dd, bb = art.ribbon(f"br{k}", pts, w, sets[k], twist=r.uniform(0.8, 2.0), phase=r.random(), opacity=0.9,
-                            strands=1 + (k % 2), shade=shade(mode), anim=art.enter(0.15 * k, dx=-24))
-        defs.append(dd); body.append(bb)
-    body.append(art.flight(f"M{ox} {oy} C{ox+200} {oy-60} {W*0.6} {oy+120} {W} {oy+40}", t["text"], 0.3))
-    add_grain(defs, body, W, H, mode, "bg")
-    defs.append(f'<linearGradient id="bshade" x1="0" x2="1"><stop offset="0" stop-color="{t["bg"]}" stop-opacity="0.96"/>'
-                f'<stop offset="0.5" stop-color="{t["bg"]}" stop-opacity="0.75"/><stop offset="0.7" stop-color="{t["bg"]}" stop-opacity="0"/></linearGradient>')
-    body.append(f'<rect x="0" y="0" width="{W}" height="{H}" fill="url(#bshade)"/>')
-    bsv, bw = bird(56, 52, 54, mode=mode)
-    body.append(bsv)
-    body.append(f'<text x="{56+bw+14:.0f}" y="88" font-family="{SANS}" font-size="20" font-weight="600" letter-spacing="-0.3" fill="{t["text"]}">Xwift'
-                f'<tspan font-family="{MONO}" font-size="13" font-weight="400" fill="{t["muted"]}" dx="10">{esc(cfg.get("kind",""))}</tspan></text>')
-    body.append(f'<text x="54" y="196" font-family="{SANS}" font-size="72" font-weight="700" letter-spacing="-2.6" fill="{t["text"]}">{esc(name)}</text>')
-    body.append(f'<text x="56" y="236" font-family="{SANS}" font-size="21" letter-spacing="-0.2" fill="{t["muted"]}">{esc(tagline)}</text>')
-    # platform chips on a translucent shelf
-    plats = cfg.get("platforms", [])
-    shelf_y = H - 76
-    if not plats:
-        return frame(W, H, t, defs, body, f"{name}. {tagline} Part of Xwift.", radius=16, cid="bc")
-    body.append(f'<rect x="40" y="{shelf_y}" width="{W-80}" height="44" rx="22" fill="{t["panel"]}" fill-opacity="0.82" stroke="{t["rule"]}"/>')
-    x = 64
-    for i, p in enumerate(plats):
-        st = p.get("status", "planned")
-        cy_ = shelf_y + 22
-        dot = (f'<circle cx="{x+6}" cy="{cy_}" r="4" fill="{t["accent"]}"/>' if st == "working" else
-               f'<circle cx="{x+6}" cy="{cy_}" r="3.5" fill="none" stroke="{t["accent"]}" stroke-width="1.5"/>' if st == "in-progress" else
-               f'<circle cx="{x+6}" cy="{cy_}" r="3.5" fill="none" stroke="{t["muted"]}" stroke-width="1.2"/>')
-        body.append(f'<g>{fade_in(0.6+0.12*i, 0.4, 0.6+0.12*len(plats)+0.4)}{dot}'
-                    f'<text x="{x+17}" y="{cy_+5}" font-family="{SANS}" font-size="14" fill="{t["text"] if st!="planned" else t["muted"]}">{esc(p["name"])}</text></g>')
-        x += 17 + len(p["name"]) * 8.2 + 26
-    lx = W - 64
-    for txt, kind in reversed([("working", "working"), ("in progress", "in-progress"), ("planned", "planned")]):
-        lx -= len(txt) * 6.6
-        body.append(f'<text x="{lx:.0f}" y="{shelf_y+26}" font-family="{MONO}" font-size="11" fill="{t["muted"]}">{txt}</text>')
-        cx_ = lx - 9; cy_ = shelf_y + 22
-        body.append(f'<circle cx="{cx_:.0f}" cy="{cy_}" r="3.5" fill="{t["accent"]}"/>' if kind == "working" else
-                    f'<circle cx="{cx_:.0f}" cy="{cy_}" r="3" fill="none" stroke="{t["accent"]}" stroke-width="1.4"/>' if kind == "in-progress" else
-                    f'<circle cx="{cx_:.0f}" cy="{cy_}" r="3" fill="none" stroke="{t["muted"]}" stroke-width="1.2"/>')
-        lx = cx_ - 20
-    return frame(W, H, t, defs, body, f"{name}. {tagline} Part of Xwift.", radius=16, cid="bc")
+    y = by + 64 - 4
+    body.append(t.run(band["title"], "display-500", 48, W / 2, baseline(y, 57.6, 48), "#ffffff", "middle")); y += 57.6 + 3
+    body.append(t.run(band["subtitle"], "mid-500", 24, W / 2, baseline(y, 28.8, 24), "#ffffff", "middle")); y += 28.8 + 22 + 30 - 14
+    for lab in band["links"]:
+        y += 14
+        bl = baseline(y, 27.2, 17)
+        body.append(t.run(lab, "text-400", 17, W / 2, bl, "#ffffff", "middle"))
+        lw = t.width(lab, "text-400", 17)
+        body.append(f'<rect x="{W / 2 - lw / 2:.1f}" y="{bl + 2.5:.1f}" width="{lw:.1f}" height="1" fill="#ffffff" fill-opacity="0.5"/>')
+        y += 27.2
+    gd, gb = grain("clg", W, by + bh, 0.05)
+    defs.append(gd); body.append(gb)
+    # footer
+    fy = by + bh
+    cols = footer["columns"]
+    rows = max(len(c[1]) for c in cols)
+    fh = 96 + 36 + 15 + rows * 33 + 64 + 60 + 48
+    body.append(f'<rect y="{fy}" width="{W}" height="{fh}" fill="{FOOTER["bg"]}"/>')
+    cx0 = 59.5; colw = (W - cx0 - 48) / len(cols)
+    for i, (head, items) in enumerate(cols):
+        x = cx0 + i * colw; y = fy + 96
+        if head is None:
+            bb, bw = bird(x, y + 1, 34, "dark")
+            body.append(bb + t.run("Xwift", "text-500", 29, x + bw + 6, y + 28, FOOTER["text"], track=-0.01))
+        else:
+            body.append(t.run(head, "text-700", 19.89, x, baseline(y + 6, 23.868, 19.89), FOOTER["heading"]))
+        y += 36 + 15
+        for it in items:
+            body.append(t.run(it, "text-400", 14, x, baseline(y + 4.9, 22.4, 14), FOOTER["text"]))
+            y += 33
+    ny = fy + 96 + 36 + 15 + rows * 33 + 64
+    for j, line in enumerate(footer["note"]):
+        body.append(t.run(line, "text-400", 11, cx0, baseline(ny + j * 17, 17, 11), FOOTER["text"], opacity=0.85))
+    H = fy + fh
+    return svg_doc(W, H, band["title"] + ". " + band["subtitle"], "".join(body), t, "".join(defs))
+
+# ---------------------------------------------------------------- repository banner (install/get-started hero)
+def repo_banner(theme, mode, cfg):
+    """A shorter hero for repository READMEs: nav, the repo name at title-0 size, the tagline at sub-text size,
+    the kind as the orange button, swoop-0 underneath. Seeded by the repo name so each repo's ribbons differ."""
+    th = THEMES[theme]; t = Text(); defs = []; body = []
+    H = 640
+    seed = sum(map(ord, cfg["name"])) % 97 / 97
+    defs.append(f'<linearGradient id="rbg" x1="0.49" y1="0" x2="0.51" y2="1">{stops(th["hero_bg"])}</linearGradient>')
+    body.append(f'<rect width="{W}" height="{H}" fill="url(#rbg)"/>')
+    gd, gb = grain("rgr", W, H, 0.05 if theme == "light" else 0.07); defs.append(gd); body.append(gb)
+    dx = (seed - 0.5) * 60
+    for i, (pal, pts, wd, tw, ph, sd) in enumerate(HERO_RIBBONS):
+        pts2 = [(x * 0.82 + dx, y * 0.62 - 20) for x, y in pts]
+        d, b = ribbon(f"rr{i}", pts2, wd * 0.8, PALETTES[pal], twists=tw, phase=ph + seed, seed=sd + int(seed * 50), strands=26,
+                      shade={"pink": "#d1489e", "white": "#e8a0c8", "lilac": "#9a63c9"}.get(pal, "#e0560a"),
+                      reveal=(0.15 * i, 1.6), body_opacity=0.95, pinch=0.4, hi=0.38 if pal != "white" else 0.0, haze=0.35, scatter=0.2)
+        defs.append(d); body.append(b)
+    labels = [l["label"] for l in cfg.get("links", [])][:4] or ["Install", "Usage", "Status"]
+    body.append(nav(t, theme, mode, labels[:-1] if len(labels) > 1 else labels, labels[-1] if len(labels) > 1 else "README"))
+    y = 200
+    body.append(t.run(cfg["name"], "display-600", 56, W / 2, baseline(y, 67.2, 56), th["hero_text"], "middle")); y += 67.2 + 30
+    tb, th_ = t.block(cfg["tagline"], "display-400", 32, 51.2, W / 2, y - 10, 860, th["hero_text"], "middle"); body.append(tb); y += th_ - 10 + 40
+    bd, bb, bh = button(t, cfg.get("kind", "repository").capitalize(), W / 2, y, size=28, padx=41)
+    defs.append(bd); body.append(bb)
+    sd_, sb_ = swoop_band("rs", theme, H - 230, 240, seed=seed * 3, kind="hero", reveal=(0.5, 1.8))
+    defs.append(sd_); body.append(sb_)
+    fd, fb = fade("rfade", H - 60, H, GH_BG[theme]); defs.append(fd); body.append(fb)
+    return svg_doc(W, H, f'{cfg["name"]}. {cfg["tagline"]}', "".join(body), t, "".join(defs))
+
+# ---------------------------------------------------------------- platform cards (get-started boxes)
+def platform_cards(theme, platforms):
+    """Get Started boxes: 3 columns, gap 20, radius 20, padding 16/16/20, 24 px 600 title, 14 px text."""
+    th = THEMES[theme]; t = Text(); body = []
+    from render_base import STATUS_LABEL
+    cols = 3; gap = 20; cw = (W - 2 * PAD - gap * (cols - 1)) / cols; ch = 112
+    rows = (len(platforms) + cols - 1) // cols
+    for i, p in enumerate(platforms):
+        r, c = divmod(i, cols); x = PAD + c * (cw + gap); y = 24 + r * (ch + gap)
+        body.append(rrect(x, y, cw, ch, 20, fill_attr(th["card_bg"])))
+        body.append(t.run(p["name"], "text-600", 24, x + 20, baseline(y + 16, 28.8, 24), th["card_text"]))
+        lab = STATUS_LABEL.get(p.get("status", ""), p.get("status", ""))
+        lw = t.width(lab, "text-500", 12) + 20
+        dot = {"working": "#2da44e", "in-progress": "#ffb000", "planned": "#8d8d8d"}.get(p.get("status"), "#8d8d8d")
+        body.append(rrect(x + cw - 20 - lw - 12, y + 19, lw + 12, 24, 12, f'fill="{th["card_text"]}" fill-opacity="0.12"'))
+        body.append(f'<circle cx="{x + cw - 20 - lw - 2:.1f}" cy="{y + 31}" r="3.5" fill="{dot}"/>')
+        body.append(t.run(lab, "text-500", 12, x + cw - 20 - lw + 6, y + 35.5, th["card_text"]))
+        tb, _ = t.block(p.get("note", ""), "text-400", 14, 19.6, x + 20, y + 16 + 28.8 + 10, cw - 40, th["card_text"])
+        body.append(tb)
+    H = 24 + rows * (ch + gap) - gap + 30
+    label = "Platforms: " + "; ".join(f'{p["name"]}: {STATUS_LABEL.get(p.get("status",""), p.get("status",""))}. {p.get("note","")}' for p in platforms)
+    return svg_doc(W, H, label, "".join(body), t)
