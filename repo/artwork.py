@@ -18,31 +18,6 @@ PALETTES = {  # ribbon colours, picked to sit in swift.org's warm/violet family 
     "sky":    [(0, "#bfe8ff"), (1, "#6fb8ff")],
 }
 
-def nav(t, theme, mode, items, cta, y=0, h=67):
-    """swift.org .site-navigation: 67 px bar, translucent, 19 px items with 12/15 px pill padding."""
-    th = THEMES[theme]; out = []
-    col, a = th["nav_bg"]
-    out.append(f'<rect x="0" y="{y}" width="{W}" height="{h}" fill="{col}" fill-opacity="{a}"/>')
-    if th["nav_shadow"]:
-        out.append(f'<rect x="0" y="{y + h}" width="{W}" height="1" fill="#000" fill-opacity="{th["nav_shadow"] * 1.6:.2f}"/>')
-    b, bw = bird(20, y + 16, 34, mode)
-    out.append(b)
-    out.append(t.run("Xwift", "text-500", 27, 20 + bw + 6, y + 43, th["nav_text"], track=-0.01))
-    # items right-aligned to x = 960, each a 5 px link pad + 15 px span pad
-    x = W - 20
-    labels = list(items) + ["|", cta]
-    widths = []
-    for lab in labels:
-        widths.append(2 + 30 if lab == "|" else t.width(lab, "text-400", 19) + 40)
-    x -= sum(widths)
-    for lab, wd in zip(labels, widths):
-        if lab == "|":
-            out.append(f'<rect x="{x + 15:.1f}" y="{y + 24.5}" width="2" height="18" fill="{th["nav_text"]}"/>')
-        else:
-            out.append(t.run(lab, "text-400", 19, x + 20, y + 40, th["nav_text"]))
-        x += wd
-    return "".join(out)
-
 def swoop_band(uid, theme, y, h, seed=0, kind="hero", reveal=None):
     """The wide multi-strand swoop that closes each swift.org section (swoop-0/1/2)."""
     rows = {  # (palette, y fraction, width, wave count, phase)
@@ -87,12 +62,17 @@ HERO_RIBBONS = [  # (palette, points, width, twists, phase, seed)
 ]
 
 PAD = 20  # swift.org .site-navigation .wrapper side padding
+# No drawn navigation bar: the Markdown link row under the hero is the navigation. The hero is
+# swift.org's hero with its 67 px nav strip cropped off; the ribbons move up by less so they still
+# bleed off the top edge instead of leaving an empty band.
+NAV_CROP = 67     # content (title, button, cards, swoop) moves up by this
+RIBBON_LIFT = 45  # top-left ribbons move up by this
 
 def hero(theme, mode, cfg):
-    """cfg: title (list of lines), sub, button, caption, create, cards [(icon, title, text)], chips [label],
-    nav_items, nav_cta. Geometry is swift.org's hero at 1280 px, shifted into the 980 px column."""
+    """cfg: title (list of lines), sub, button, caption, create, cards [(icon, title, text)], chips [label].
+    Geometry is swift.org's hero at 1280 px, shifted into the 980 px column, without the nav strip."""
     th = THEMES[theme]; t = Text(); defs = []; body = []
-    H = 1135
+    H = 1135 - NAV_CROP; top = 302 - NAV_CROP
     # background: swift.org --homepage-hero-bg (179deg)
     defs.append(f'<linearGradient id="hbg" x1="0.49" y1="0" x2="0.51" y2="1">{stops(th["hero_bg"])}</linearGradient>')
     body.append(f'<rect width="{W}" height="{H}" fill="url(#hbg)"/>')
@@ -100,19 +80,18 @@ def hero(theme, mode, cfg):
     defs.append(gd); body.append(gb)
     # ribbons (drawn in once, like swift.org's hero canvas animation)
     for i, (pal, pts, wd, tw, ph, sd) in enumerate(HERO_RIBBONS):
+        pts = [(x, y - RIBBON_LIFT) for x, y in pts]
         d, b = ribbon(f"hr{i}", pts, wd, PALETTES[pal], twists=tw, phase=ph, seed=sd, strands=30,
                       shade={"pink": "#d1489e", "white": "#e8a0c8", "lilac": "#9a63c9"}.get(pal, "#e0560a"), reveal=(0.15 * i, 1.7),
                       body_opacity=0.97, pinch=0.4, hi=0.42 if pal != "white" else 0.0, haze=0.12, scatter=0.12)
         defs.append(d); body.append(b)
-    # navigation bar over the art
-    body.append(nav(t, theme, mode, cfg["nav_items"], cfg["nav_cta"]))
-    # title-0: 56/67.2, 600, centred, top 302, margin-bottom 30
+    # title-0: 56/67.2, 600, centred, top 302 on swift.org (235 here without the nav), margin-bottom 30
     for i, line in enumerate(cfg["title"]):
-        body.append(t.run(line, "display-600", 56, W / 2, baseline(302 + 67.2 * i, 67.2, 56), th["hero_text"], "middle"))
-    ty = 302 + 67.2 * len(cfg["title"])
+        body.append(t.run(line, "display-600", 56, W / 2, baseline(top + 67.2 * i, 67.2, 56), th["hero_text"], "middle"))
+    ty = top + 67.2 * len(cfg["title"])
     # sub-text h2: 32/51.2, 400, margin 20 0 60
     sy = ty + 30 + 20 - 0  # swift.org: h1 margin 30 + h2 margin-top 20 ... collapsed -> 467 for two lines
-    sy = 467 + (ty - 436.4)
+    sy = 467 - NAV_CROP + (ty - (436.4 - NAV_CROP))
     body.append(t.run(cfg["sub"], "display-400", 32, W / 2, baseline(sy, 51.2, 32), th["hero_text"], "middle"))
     by = sy + 51.2 + 60
     bd, bb, bh = button(t, cfg["button"], W / 2, by)
@@ -122,7 +101,7 @@ def hero(theme, mode, cfg):
     hy = cy + 27.2 + 70
     body.append(t.run(cfg["create"], "display-400", 32, W / 2, baseline(hy, 51.2, 32), th["text"], "middle"))
     # bottom swoop (swoop-0) sits behind the cards' lower half
-    sd_, sb_ = swoop_band("hs", theme, 880, 300, seed=0.3, kind="hero", reveal=(0.6, 1.8))
+    sd_, sb_ = swoop_band("hs", theme, 880 - NAV_CROP, 300, seed=0.3, kind="hero", reveal=(0.6, 1.8))
     defs.append(sd_); body.append(sb_)
     # primary cards: 313x128, gap 20, radius 36, padding 25, rgba(255,177,100,.9) / #23344a
     py = hy + 51.2 + 29
@@ -293,27 +272,28 @@ def closing(theme, mode, band, footer):
     return svg_doc(W, H, band["title"] + ". " + band["subtitle"], "".join(body), t, "".join(defs))
 
 # ---------------------------------------------------------------- repository banner (install/get-started hero)
+BANNER_CROP = 60  # the banner's nav strip is cropped off too
+BANNER_LIFT = 30
+
 def repo_banner(theme, mode, cfg):
-    """A shorter hero for repository READMEs: nav, the repo name at title-0 size, the tagline at sub-text size,
+    """A shorter hero for repository READMEs (no drawn nav): the repo name at title-0 size, the tagline at sub-text size,
     the kind as the orange button, swoop-0 underneath. Seeded by the repo name so each repo's ribbons differ."""
     th = THEMES[theme]; t = Text(); defs = []; body = []
-    H = 700
+    H = 700 - BANNER_CROP
     seed = sum(map(ord, cfg["name"])) % 97 / 97
     defs.append(f'<linearGradient id="rbg" x1="0.49" y1="0" x2="0.51" y2="1">{stops(th["hero_bg"])}</linearGradient>')
     body.append(f'<rect width="{W}" height="{H}" fill="url(#rbg)"/>')
     gd, gb = grain("rgr", W, H, 0.05 if theme == "light" else 0.07); defs.append(gd); body.append(gb)
     dx = (seed - 0.5) * 60
     for i, (pal, pts, wd, tw, ph, sd) in enumerate(HERO_RIBBONS):
-        pts2 = [(x * 0.82 + dx, y * 0.62 - 20) for x, y in pts]
+        pts2 = [(x * 0.82 + dx, y * 0.62 - 20 - BANNER_LIFT) for x, y in pts]
         d, b = ribbon(f"rr{i}", pts2, wd * 0.8, PALETTES[pal], twists=tw, phase=ph + seed, seed=sd + int(seed * 50), strands=26,
                       shade={"pink": "#d1489e", "white": "#e8a0c8", "lilac": "#9a63c9"}.get(pal, "#e0560a"),
                       reveal=(0.15 * i, 1.6), body_opacity=0.97, pinch=0.4, hi=0.42 if pal != "white" else 0.0, haze=0.12, scatter=0.12)
         defs.append(d); body.append(b)
     sd_, sb_ = swoop_band("rs", theme, H - 250, 250, seed=seed * 3, kind="hero", reveal=(0.5, 1.8))
     defs.append(sd_); body.append(sb_)
-    labels = [l["label"] for l in cfg.get("links", [])][:4] or ["Install", "Usage", "Status"]
-    body.append(nav(t, theme, mode, labels[:-1] if len(labels) > 1 else labels, labels[-1] if len(labels) > 1 else "README"))
-    y = 190
+    y = 190 - BANNER_CROP
     body.append(t.run(cfg["name"], "display-600", 56, W / 2, baseline(y, 67.2, 56), th["hero_text"], "middle")); y += 67.2 + 20
     tb, th_ = t.block(cfg["tagline"], "display-400", 32, 51.2, W / 2, y, 860, th["hero_text"], "middle"); body.append(tb); y += th_ + 40
     bd, bb, bh = button(t, cfg.get("kind", "repository").capitalize(), W / 2, y, size=28, padx=41)

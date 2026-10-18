@@ -85,7 +85,7 @@ numbers `#272ad8` / `#d9c97c`, types `#703daa` / `#dabaff`, project names `#2d64
   faded in when scrolled into view.
 - Xwift redraws this style from scratch in vector: `repo/art.py` builds each ribbon from offset strands around a spline, with a soft highlight stripe,
   a darker edge, a haze, a displacement-noise spray and 4–7% generated grain. Motion: ribbons glide in once (SMIL, ~2 s) and stay.
-  No swift.org image is hotlinked, traced or copied, and there is no bird head: the Xwift mark sits in the nav and footer.
+  No swift.org image is hotlinked, traced or copied, and there is no bird head: the Xwift mark sits in the footer (the README hero has no drawn nav).
 
 ## 5. Page structure
 

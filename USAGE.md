@@ -15,7 +15,7 @@ GitHub strips CSS and web fonts from READMEs. So everything typographic or decor
 - Every SVG is 980 units wide: one unit is one CSS pixel of swift.org's 980 px content column. At `width="100%"` the README column becomes that column, so sizes, gaps and radii keep swift.org's proportions.
 - Each block has a light and a dark file, switched with `<picture>` and `prefers-color-scheme`. Block edges fade into GitHub's page colours (`#ffffff`, `#0d1117`), so stacked images read as one page.
 - Text inside SVGs is outlined: glyph paths from Inter (with its Display optical size and dynamic tracking, standing in for SF Pro) and JetBrains Mono (for SF Mono), stored in `brand/glyphs.json`. No font is embedded or loaded.
-- Links live in Markdown. Drawn navigation is decoration; the link row under the hero is the real navigation.
+- Links live in Markdown. The hero has no drawn navigation bar; the link row under the hero is the navigation.
 
 ## Layout
 
@@ -32,7 +32,7 @@ repo/
   render.py              entry point: org profile or repository README
   render_base.py         swift.org tokens (type, colour, spacing), outlined text, the Xwift mark
   art.py                 primitives: airbrushed ribbons, swoops, grain, icons
-  artwork.py             compositions: hero, nav, intro, callout header, code card, swoop, closing band + footer, repo banner, platform cards
+  artwork.py             compositions: hero, intro, callout header, code card, swoop, closing band + footer, repo banner, platform cards
   examples/xwift/        sample: config, README.md, .github/assets/
 tools/
   build_glyphs.py        rebuilds brand/glyphs.json (needs fonttools, uharfbuzz)
@@ -55,7 +55,7 @@ tools/
    This writes `README.md` and `assets/` into the target folder. Without `--out` it writes into `org/profile/`.
 3. Commit `profile/README.md` and `profile/assets/` to `xwift-org/.github`. The repository must be public.
 
-The profile follows swift.org's home page: nav and hero (title, three-word tagline, button, caption, three cards, four chips, swoop), the 24 px intro, three callouts, a swoop, two more callouts, then Status and Contact, then the purple closing band and the footer.
+The profile follows swift.org's home page without its nav bar: the hero (title, three-word tagline, button, caption, three cards, four chips, swoop), the 24 px intro, three callouts, a swoop, two more callouts, then Status and Contact, then the purple closing band and the footer.
 
 ## Repository README
 
@@ -84,7 +84,7 @@ The profile follows swift.org's home page: nav and hero (title, three-word tagli
 | `platforms_text` | Platforms section | Used when `platforms` is empty. |
 | `status`, `contributing`, `license` | their sections | Plain sentences. |
 | `*_subtitle` | section subtitles | e.g. `install_subtitle = "Get the code. Build it."` Defaults are set in `render.py`. |
-| `links` | link row and nav labels | `label`, `url`. Only links that resolve today. |
+| `links` | link row and footer labels | `label`, `url`. Only links that resolve today. |
 | `band` | closing band | Optional `title`, `subtitle`, `links`. |
 | `org`, `assets_dir` | | Defaults `<org>`, `.github/assets`. |
 
@@ -105,6 +105,6 @@ swift.org's: short, confident, declarative, plain words. One-word section titles
 
 - No section background behind Markdown text. swift.org's tinted pillars (pale blue, peach) cannot sit behind body copy, so the colour lives in the hero, the swoops and the closing band.
 - Body text is GitHub's 16 px in GitHub's font stack (SF Pro on Apple platforms, Segoe UI on Windows, the system sans elsewhere), not swift.org's 17 px.
-- No hover states, no sticky translucent nav, no scroll-triggered swoops. Drawn nav and cards are not clickable; the Markdown link row is.
+- No hover states, no sticky translucent nav, no scroll-triggered swoops. There is no drawn nav, and the drawn cards are not clickable; the Markdown link row is.
 - Images stack with GitHub's 16 px paragraph gap, so every block starts and ends on the page colour.
 - Animations run once when the image loads, not when it scrolls into view.

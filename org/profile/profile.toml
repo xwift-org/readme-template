@@ -3,7 +3,7 @@
 org = "xwift-org"
 contact = "vido.teodor10@gmail.com"
 
-# Clickable row under the hero. The hero's own nav is drawn, so these are the real links.
+# Clickable row under the hero. The hero has no drawn nav; this row is the navigation.
 links = [
   { label = "Overview", url = "#overview" },
   { label = "Projects", url = "#projects" },
@@ -19,8 +19,6 @@ sub      = "Write once. Run everything."
 button   = "Contact"
 caption  = "Planned for macOS, Windows, Linux, Android, iOS and the web"
 create   = "Create with Xwift"
-nav_items = ["Overview", "Projects", "Status"]
-nav_cta  = "Contact"
 cards = [
   { icon = "apps",     title = "Apps",         text = "One codebase for desktop and mobile apps." },
   { icon = "web",      title = "Web",          text = "Compile to WebAssembly and run in any browser." },
