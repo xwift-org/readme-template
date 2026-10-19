@@ -172,9 +172,10 @@ The toolchain comes first. A UI framework, system APIs and a package manager fol
   </picture>
 </p>
 
-- **Phase 0 is done.** Private mirrors of the Swift compiler, driver, package manager and installer scripts, plus a reproducible build setup.
+- **Phase 0 Linux build succeeded.** On 18 Oct 2026 the full unmodified Swift 6.4.1 toolchain built on Linux x86_64 (xwift-build run 39103701085). Artifact: `xwift-0.1.0-phase0-linux-x86_64` (~1.27 GB).
+- **Private mirrors are in place.** Compiler, driver, package manager and installer scripts at swift-6.4.1-RELEASE, plus a pinned reproducible build setup in xwift-build.
 - **The proof of concept runs.** One package builds, tests and runs on macOS, Linux, Windows and WebAssembly in CI.
-- **Not released.** There is no public toolchain, no website and no download yet. The source repositories are private.
+- **Not released.** There is no public toolchain download. The source repositories are private. An early marketing site exists in xwift-web.
 - **License.** Not chosen yet.
 
 <a id="contact"></a>
